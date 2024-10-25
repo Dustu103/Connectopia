@@ -3,7 +3,7 @@ const User = require('../Model/User')
 const generateToken = require('./generateToken')
 
 const registeruser = asyncHandler(async(req,res)=>{
-    const {name,email,password,profile_pic}=req.body
+    const {name,email,password,profile_pic,public_key}=req.body
    
 
     if(!name || !email || !password){
@@ -19,7 +19,7 @@ const registeruser = asyncHandler(async(req,res)=>{
        })}
    try {
     const user = await User.create({
-        name,email,password,profile_pic
+        name,email,password,profile_pic,public_key
     })
     const jwt = await generateToken(user._id)
     const cookieOption = {

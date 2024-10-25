@@ -6,10 +6,10 @@ const {accessChat,fetchChat,createGroupChat,renameGroup,addToGroup,removeFromGro
 router.route('/').post(protect,accessChat)
 .get(protect,fetchChat)
 
-router.route('/group').post(protect,createGroupChat)
-// .get(protect,fetchGroupChat)
-router.route('/group/rename').put(protect,renameGroup)
-router.route('/group/remove').put(protect,removeFromGroup)
-router.route('/group/add').put(protect,addToGroup)
+// router.route('/group').post(protect,createGroupChat)
+// // .get(protect,fetchGroupChat)
+// router.route('/group/rename').put(protect,renameGroup)
+// router.route('/group/remove').put(protect,removeFromGroup)
+// router.route('/group/add').put(protect,addToGroup)
 
 module.exports = router

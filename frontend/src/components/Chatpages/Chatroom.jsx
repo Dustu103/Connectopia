@@ -10,6 +10,8 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import moment from "moment";
 import './customEmojiPicker.css'
 import { MdTextSnippet } from 'react-icons/md';
+
+import * as openpgp from 'openpgp';
 // import data from '@emoji-mart/data'
 // import Picker from '@emoji-mart/react'
 
@@ -31,6 +33,7 @@ const ChatRoom = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [Allmessage, setAllmessage] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [decryptedMessage, setDecryptedMessages]=useState([])
 
   //  scroll down
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -38,7 +41,12 @@ const ChatRoom = () => {
   // let atBottom = false;
   useEffect(() => {
     chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight;
-  }, [])   //problem while hit allmessage
+  }, [Allmessage])   //problem while hit allmessage
+
+  // const encryptedMessage=async()=>{ await openpgp.encrypt({
+  //   message: await openpgp.createMessage({ text: message }),
+  //   encryptionKeys: await openpgp.readKey({ armoredKey: publicKey }),
+  // })};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -119,6 +127,7 @@ const ChatRoom = () => {
   }, [socketConnection,user,userData,params,Allmessage]); //hit userdata
 
 
+
   return (
     <div className="flex flex-col h-full bg-gradient-to-r from-gray-800 via-black to-gray-900 z-10">
   {userData && (
@@ -141,12 +150,13 @@ const ChatRoom = () => {
       </div>
     </div>
   )}
-  {Allmessage  &&(
+  {Allmessage &&(
     <ul
       className="chat-thread flex-grow p-4 space-y-4 overflow-y-auto"
       style={{ height: "calc(100vh - 64px)" }}
       ref={chatThreadRef}
     >
+      {/* {console.log(decryptedMessage)} */}
       {Allmessage.map((message, index) => (
        <li
        key={index}
@@ -171,7 +181,7 @@ const ChatRoom = () => {
                target="_blank"
                rel="noopener noreferrer"
              >
-               <MdTextSnippet className="mr-2 text-gray-600" size={24} /> {/* Using React Icon */}
+               <MdTextSnippet className="mr-2 text-gray-600" size={24} />
                <span className="text-gray-700">Download Text File</span>
              </a>
            ) : (

@@ -81,7 +81,7 @@ function UpdateUser() {
     setLoading(true);    
     try {
       const imgUploaded = await uploadImg(); // Wait for image upload
-      console.log(imgUploaded)
+      // console.log(imgUploaded)
       // console.log(profileUrl)
       if (imgUploaded===null) {
         setLoading(false);

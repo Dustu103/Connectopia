@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { MdTextSnippet } from "react-icons/md"; // For text file icon
 import { FaVideo } from "react-icons/fa"; // For video file icon
 import { AiFillFileImage } from "react-icons/ai";
+import * as openpgp from 'openpgp';
 
 const ConversationList = () => {
   const navigate = useNavigate();
@@ -30,9 +31,43 @@ const ConversationList = () => {
       socketConnection.on("conversation", (data) => {
         setAllUser(data);
         // console.log(data);
+        // setAllUser(decryptedConversations);
       });
     }
   }, [socketConnection, user,allUser]);
+
+  const privateKey = localStorage.getItem('privateKey');
+
+  // const decryptConversations = async (conversations) => {
+  //   const decryptedConversations = await Promise.all(
+  //     conversations.map(async (conversation) => {
+  //       const decryptedLastMsg = await decrypt(conversation.lastMsg);
+  //       return {
+  //         ...conversation,
+  //         lastMsg: {
+  //           ...conversation.lastMsg,
+  //           ...decryptedLastMsg, // Update only text and fileUrl in lastMsg
+  //         },
+  //       };
+  //     })
+  //   );
+  //   setAllUser(decryptedConversations);
+  // };
+
+  // const decrypt=async(msg)=>{
+  //       const decryptedText = await openpgp.decrypt({
+  //         message: await openpgp.readMessage({ armoredMessage: msg.text }),
+  //         decryptionKeys: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+  //       });
+  //       const decryptedFileUrl = await openpgp.decrypt({
+  //         message: await openpgp.readMessage({ armoredMessage: msg.fileUrl }),
+  //         decryptionKeys: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+  //     });
+  //     return {
+  //       text: decryptedText.data,
+  //       fileUrl: decryptedFileUrl.data
+  //     }
+  //   }
 
   return (
     <div className="p-4 bg-gradient-to-b from-gray-900 to-black text-white">
@@ -58,6 +93,7 @@ const ConversationList = () => {
                 <h3 className="font-bold text-white">
                   {conversation.receiver.name}
                 </h3>
+                
                 {conversation?.lastMsg?.fileUrl && (
                   <>
                     {conversation?.lastMsg?.fileUrl.includes(".mp4") ? (

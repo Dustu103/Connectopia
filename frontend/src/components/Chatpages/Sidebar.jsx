@@ -5,15 +5,22 @@ import { LuLogOut } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import SearchUser from "./SearchUser";
+import { useDispatch } from "react-redux";
+import { logout } from "../../Redux/User/userSlice";
 
 function Sidebar({ username, url }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch()
   const [openSearchUser,setOpenSearchUser]=useState(false)
   
   const updateUser = () => {
     navigate("/updateuser");
   };
 
+  const logoutUser = ()=>{
+    dispatch(logout())
+    navigate('/')
+  }
 
 
   return (
@@ -53,7 +60,7 @@ function Sidebar({ username, url }) {
           />
         </button>
         <div className="relative group">
-          <LuLogOut className="text-teal-300 text-3xl cursor-pointer hover:text-red-400 md:ml-4" />
+          <LuLogOut onClick={logoutUser} className="text-teal-300 text-3xl cursor-pointer hover:text-red-400 md:ml-4" />
           <div className="absolute ml-4 w-auto bg-gray-800 text-white text-sm rounded opacity-0 mb-4 group-hover:opacity-100 transition-opacity duration-200">
             Logout
           </div>

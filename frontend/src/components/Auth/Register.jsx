@@ -6,6 +6,7 @@ import "./Login.css"; // Ensure this file is in the same directory or adjust the
 import { FaEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
+import verifyEmail from "../../helperfunc/emailvalidation";
 
 const SignIn = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -77,6 +78,15 @@ const SignIn = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    let emailexist = verifyEmail(email);
+    // const public_key = await generateKeyPair(name,email)
+    // const key= localStorage.getItem('privateKey')
+    // const privateKey = encryptPrivateKey(key,email)
+    // console.log(privateKey);
+    // return;
+    if(!emailexist){
+         return navigate('/register')
+    }
     if (profilepic === undefined) {
       setLoading(false);
       toast.error('Please select a picture');

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ConversationList from './Users';
 import axios from 'axios';
@@ -7,13 +7,24 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setUser, setOnlineUser, setSocketConnection } from '../../Redux/User/userSlice';
 import io from 'socket.io-client';
 import background from './back.jpg'
+import toast from 'react-hot-toast';
 
 function Chat() {
   const [userDetails, setUserDetails] = useState([]);
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
   const params =useParams();
-  console.log(params.id)
+  const navigate = useNavigate()
+  // console.log(params.id)
+
+  const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
+
+  useEffect(()=>{
+    if(!isAuthenticated){
+      toast.error("Please login , access denied")
+      return navigate('/')
+    }
+  },[isAuthenticated])
 
   const fetchData = async () => {
     try {

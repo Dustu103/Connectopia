@@ -5,6 +5,8 @@ const userDetails = require('../controlers/userDetails');
 const User = require('../Model/User');
 const Message = require('../Model/Message');
 const chatModel = require('../Model/chatModel');
+const openpgp = require('openpgp');
+
 
 const app= express()
 
@@ -47,9 +49,12 @@ io.on('connection',async(socket)=>{
     // console.log("token",data.body.data._id)
 
     // create a room
-    socket.join(data.body.data._id.toString())
-    onlineUser.add(data.body.data._id.toString())
-
+    // console.log(data);
+    // return
+    socket.join(data?.body?.data?._id.toString())
+    onlineUser.add(data?.body?.data?._id.toString())
+    // const publicKey= data?.body.data?.public_key
+    
     io.emit('onlineUser',Array.from(onlineUser))  //io represents the entire Socket.io server instance and is used to manage the overall connections, send messages to all connected clients, or broadcast events.
 
     socket.on('message',async(id)=>{   //socket represents a single client connection and is used to interact with that specific client (or room).
@@ -78,6 +83,7 @@ io.on('connection',async(socket)=>{
         // io.to(data.body.data._id.toString()).emit('convmessage',getPrevConversation?.chats || [])
         // io.to(id.toString()).emit('convmessage',getPrevConversation?.chats || [])
         // console.log(getPrevConversation?.chats||[])
+        // console.log(getPrevConversation)
         socket.emit('prevmessages',getPrevConversation?.chats||[])
     })
 
@@ -90,6 +96,7 @@ io.on('connection',async(socket)=>{
     // disconnect
     socket.on('newmessages',async (data) => {
         // console.log(data);
+        // return
         let conversation = await Message.findOne({
             "$or":[
                 {sender : data?.senderId, receiver: data?.receiverId},
@@ -102,9 +109,23 @@ io.on('connection',async(socket)=>{
             })
             conversation = await createConversatation.save()
         }
+        // const receiverPerson = await User.findById(data?.receiverId)
+        // // console.log(receiverPerson)
+        // const publicKey= receiverPerson.public_key
+        // return ;
+        // const encryptedMessage = await openpgp.encrypt({
+        //     message: await openpgp.createMessage({ text: data?.text ||'' }),
+        //     encryptionKeys: await openpgp.readKey({ armoredKey: publicKey }),
+        //   });
+
+        //   const encryptedFileUrl = await openpgp.encrypt({
+        //     message: await openpgp.createMessage({ text: data?.fileUrl || '' }),  // Encrypt the file URL
+        //     encryptionKeys: await openpgp.readKey({ armoredKey: publicKey }),  // Public key for encryption
+        //   });
+
         const message = new chatModel({
-            text: data?.text,
-            fileUrl: data?.fileUrl, 
+            text: data?.text ||'',
+            fileUrl: data?.fileUrl||'', 
             msgByUserId: data?.senderId          
         })
         const saveMessage= await message.save()

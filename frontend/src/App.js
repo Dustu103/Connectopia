@@ -10,6 +10,8 @@ import ChatRoom from "./components/Chatpages/Chatroom";
 import toast, { Toaster } from 'react-hot-toast';
 import ForgetPassword from "./components/Auth/ForgetPassword";
 import UpdateUser from "./components/Auth/UpdateUser";
+import AuthenticatedRoute from "./helperfunc/AuthenticatedRoute";
+import NotFound from "./components/404";
 
 
 function App() {
@@ -20,15 +22,15 @@ function App() {
     },
     {
       path: "/register",
-      element: <Register/>
+      element: <Register/> 
     },
     {
       path: "/forgetpassword",
-      element: <ForgetPassword/>
+      element:(<AuthenticatedRoute> <ForgetPassword/></AuthenticatedRoute>)
     },
     {
       path:"/chat",
-      element: <Chat/>,
+      element:(<AuthenticatedRoute><Chat/></AuthenticatedRoute>) ,
       children: [
         {path : ":id",
           element : <ChatRoom/>
@@ -37,7 +39,11 @@ function App() {
     },
     {
       path:"/updateuser",
-      element: <UpdateUser/>
+      element:(<AuthenticatedRoute><UpdateUser/></AuthenticatedRoute>) 
+    },
+    {
+      path: "*", // Catch-all route
+      element: <NotFound/> // Render NotFound component for unmatched routes
     }
     ])
   return (

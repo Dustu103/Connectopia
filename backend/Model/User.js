@@ -19,7 +19,15 @@ const userSchema= new Schema({
         type: String,
         required:true,
         default:"https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg"
-    }
+    },
+    // public_key:{
+    //     type :String,
+    //     required:[true,"Public key is must"]
+    // },
+    // private_key:{
+    //     type: String,
+    //     required: [true,"Private key is must"]
+    // }
 },{
     timestamps:true
 })
