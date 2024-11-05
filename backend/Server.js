@@ -20,7 +20,8 @@ app.use(cookieParser());
 app.use('/user',userroutes)
 app.use('/chat',chatroutes)
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    // origin: process.env.FRONTEND_URL,
+    origin:'*',
     credentials: true
 }))
 
