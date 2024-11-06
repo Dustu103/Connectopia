@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:2003",
+  "proxy": "https://connectopia-ebka.onrender.com",
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
     "@tailwindcss/line-clamp": "^0.4.4",
