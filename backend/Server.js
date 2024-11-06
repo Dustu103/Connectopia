@@ -23,10 +23,7 @@ app.use("/" , (req,res)=>{
     res.send("Server is running")
 }
 )
-app.use(cors({
-    // origin: process.env.FRONTEND_URL,
-    origin:'*',
-}))
+app.use(cors({origin:'*'}))
 
 server.listen(port,()=>{
     console.log("app is listening on port 2003")
