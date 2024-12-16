@@ -13,17 +13,20 @@ const {app,server} = require('./Socket/index.js')
 
 connectDB()  //conecting mongodb
 
+app.use(cors({origin:'*'}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use('/user',userroutes)
-app.use('/chat',chatroutes)
-app.use("/" , (req,res)=>{
+
+app.get("/" , (req,res)=>{
     res.send("Server is running")
 }
 )
-app.use(cors({origin:'*'}))
+app.use('/user',userroutes)
+app.use('/chat',chatroutes)
+
+
 
 server.listen(port,()=>{
     console.log("app is listening on port 2003")
