@@ -13,7 +13,17 @@ const {app,server} = require('./Socket/index.js')
 
 connectDB()  //conecting mongodb
 
-app.use(cors({origin:'*'}))
+app.use(cors({
+    origin: true,  // Allows any origin dynamically
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,  // Allows cookies to be sent
+    allowedHeaders: "Content-Type,Authorization"
+}));
+
+// Handle preflight requests properly
+app.options("*", cors());
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -21,8 +31,7 @@ app.use(cookieParser());
 
 app.get("/" , (req,res)=>{
     res.send("Server is running")
-}
-)
+})
 app.use('/user',userroutes)
 app.use('/chat',chatroutes)
 
