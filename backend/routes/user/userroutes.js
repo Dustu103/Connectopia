@@ -13,6 +13,7 @@ router.post('/register',async(req,res)=>{
     await registeruser(req,res);
 })
 router.post('/login',async(req,res)=>{
+    // console.log("reach")
    authUser(req,res)
 })
 router.post('/logout',logout)
