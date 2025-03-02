@@ -7,6 +7,9 @@ import { FaEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import verifyEmail from "../../helperfunc/emailvalidation";
+import { useDispatch } from "react-redux";
+import { setUser } from "../../Redux/User/userSlice";
+
 
 const SignIn = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -15,12 +18,11 @@ const SignIn = () => {
   const [name, setName] = useState("");
   const [profilepic, setProfilePic] = useState();
   const [loading, setLoading] = useState(false);
-  const [profileUrl, setProfileUrl] = useState("");
   
   const [profilePicPreview, setProfilePicPreview] = useState("");
 
   const navigate = useNavigate();
-
+  const dispatch = useDispatch();
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
@@ -59,7 +61,6 @@ const SignIn = () => {
       )
         .then((res) => res.json())
         .then((data) => {
-          setProfileUrl(data.url.toString());
           setLoading(false);
           return data.url.toString();
         })
@@ -78,27 +79,24 @@ const SignIn = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // let emailexist = verifyEmail(email);
+    let emailexist = verifyEmail(email);
     // const public_key = await generateKeyPair(name,email)
     // const key= localStorage.getItem('privateKey')
     // const privateKey = encryptPrivateKey(key,email)
     // console.log(privateKey);
     // return;
-    // if(!emailexist){
-    //      return navigate('/register')
-    // }
-    if (profilepic === undefined) {
-      setLoading(false);
-      toast.error('Please select a picture');
-      return;
+    if(!emailexist){
+         return navigate('/register')
     }
+    let imgUploaded = "";
+    if(profilepic !== undefined){
     // Wait for image upload
-    const imgUploaded = await uploadImg();
+     imgUploaded = await uploadImg();
     if (!imgUploaded) {
       setLoading(false);
       return toast.error("Image upload failed");
     }
-  
+    }
     try {
       const config = {
         headers: {
@@ -106,18 +104,18 @@ const SignIn = () => {
         },
       };
   
-      const { data } = await axios.post(
-        "/user/register",
+      const { data } = await axios.post(`${process.env.REACT_APP_BACKEND}/user/register`,
         { name, email, password, profile_pic: imgUploaded },
         config
       );
   
       localStorage.setItem("userInfo", JSON.stringify(data));
       toast.success("User created successfully");
-  
+      dispatch(setUser(data));
       // Redirect to chat page after successful registration
       navigate("/chat");
     } catch (err) {
+      console.log(err)
       setLoading(false);
       return toast.error(err.response.data.message);
     }

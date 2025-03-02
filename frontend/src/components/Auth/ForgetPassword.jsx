@@ -18,7 +18,7 @@ function ForgetPassword() {
           "Content-type": "application/json",
         },
       };
-      const { data } = await axios.post("/user/forgetPassword", { email, password }, config);
+      const { data } = await axios.post(`${process.env.REACT_APP_BACKEND}/user/forgetPassword`, { email, password }, config);
       navigate("/");
       toast.success(data.message);
     } catch (err) {

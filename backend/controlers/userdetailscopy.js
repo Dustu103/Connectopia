@@ -2,9 +2,9 @@ const jwt = require('jsonwebtoken')
 const User = require("../Model/User")
 const asyncHandler = require('express-async-handler')
 
-const userDetails = asyncHandler(async (req,res) =>{
+const userDetailsSocket = asyncHandler(async (req,res) =>{
     // console.log(req.headers.authorization);
-    let token=req?.headers?.authorization || req?.cookies?.token  ||"";
+    let token= req?.cookies?.token  ||"";
     // console.log(token)
     if(token){
         try {
@@ -29,4 +29,4 @@ const userDetails = asyncHandler(async (req,res) =>{
     }
 })
 
-module.exports = userDetails
+module.exports = userDetailsSocket

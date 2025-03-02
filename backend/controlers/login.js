@@ -22,12 +22,9 @@ const registeruser = asyncHandler(async (req, res) => {
       name,
       email,
       password,
-      profile_pic:
-        profile_pic !== ""
-          ? profile_pic
-          : "https://res.cloudinary.com/djvjxp2am/image/upload/v1633666824/Profile%20Pic/blank-profile-picture-973460_640",
+      ...(profile_pic && { profile_pic }),
     });
-    console.log(true)
+    
     const jwt = await generateToken(user._id);
     const cookieOption = {
       http: true,
@@ -47,7 +44,7 @@ const registeruser = asyncHandler(async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return res.status(500).json({
       message: "Server error, please try again",
       error: error,

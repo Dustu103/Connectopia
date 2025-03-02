@@ -1,20 +1,18 @@
 const express =require('express')
 const { Server } =require('socket.io')
 const { createServer }= require('node:http');
-const userDetails = require('../controlers/userDetails');
+const userDetailsSocket = require('../controlers/userdetailscopy')
+const getUserDetailsFromToken = require('../helper/getUserDetails')
 const User = require('../Model/User');
 const Message = require('../Model/Message');
 const chatModel = require('../Model/chatModel');
-const openpgp = require('openpgp');
-
-
 const app= express()
 
 // Socket connection
 const server = createServer(app)
 const io = new Server(server,{
     cors: {
-        origin: process.env.FRONTEND_URL,
+        origin: true,
         credentials: true
     }
 })
@@ -25,36 +23,35 @@ const onlineUser = new Set()
 io.on('connection',async(socket)=>{
 
     // current user details
-    // console.log(socket);
+    // console.log("                                      ",socket);
 
     const token = socket.handshake.auth.token
+    // console.log(token)
+    // const req = {
+    //     cookies:token
+    // };
 
-    const req = {
-        cookies: {
-            token: token // Set the token in the cookies
-        }
-    };
-
-    const res = {
-        status: (statusCode) => ({
-            json: (responseBody) => {
-                // Handle the response here (e.g., send it back to the client)
-                return Promise.resolve({ statusCode, body: responseBody });
-            }
-        })
-    };
-
-    const data = await userDetails(req,res)
+    // const res = {
+    //     status: (statusCode) => ({
+    //         json: (responseBody) => {
+    //             // Handle the response here (e.g., send it back to the client)
+    //             return Promise.resolve({ statusCode, body: responseBody });
+    //         }
+    //     })
+    // };
+    
+    // console.log("re0",req);
+    const data = await getUserDetailsFromToken(token)
     // console.log(data);
-    // console.log("token",data.body.data._id)
+    // console.log("token",data._id)
 
     // create a room
     // console.log(data);
     // return
-    socket.join(data?.body?.data?._id.toString())
-    onlineUser.add(data?.body?.data?._id.toString())
+    socket.join(data?._id.toString())
+    onlineUser.add(data?._id.toString())
     // const publicKey= data?.body.data?.public_key
-    
+    console.log(onlineUser)
     io.emit('onlineUser',Array.from(onlineUser))  //io represents the entire Socket.io server instance and is used to manage the overall connections, send messages to all connected clients, or broadcast events.
 
     socket.on('message',async(id)=>{   //socket represents a single client connection and is used to interact with that specific client (or room).
@@ -69,21 +66,16 @@ io.on('connection',async(socket)=>{
             profile_pic: userDetails.profile_pic,
             online : onlineUser.has(id.toString())
         }
-        
+        console.log(payload)
         socket.emit('isonline',payload) //message-user = isonline
 
         // finding prevmessages
         const getPrevConversation = await Message.findOne({
             "$or":[
-                {sender : data.body.data._id, receiver:id},
-                {sender : id, receiver: data.body.data._id},
+                {sender : data._id, receiver:id},
+                {sender : id, receiver: data._id},
             ]
         }).populate('chats').sort({ updatedAt: -1 })
-        // console.log(data);
-        // io.to(data.body.data._id.toString()).emit('convmessage',getPrevConversation?.chats || [])
-        // io.to(id.toString()).emit('convmessage',getPrevConversation?.chats || [])
-        // console.log(getPrevConversation?.chats||[])
-        // console.log(getPrevConversation)
         socket.emit('prevmessages',getPrevConversation?.chats||[])
     })
 
@@ -182,10 +174,11 @@ io.on('connection',async(socket)=>{
     })
 
     socket.on('seen',async(MsgByUserId)=>{
+        // console.log(data)
         const conversationSeen =await Message.findOne({
             "$or":[
-                {sender : data.body.data._id, receiver: MsgByUserId},
-                {sender : MsgByUserId, receiver: data.body.data._id},
+                {sender : data._id, receiver: MsgByUserId},
+                {sender : MsgByUserId, receiver: data._id},
             ]
         })
 
@@ -195,14 +188,14 @@ io.on('connection',async(socket)=>{
             { _id : { "$in": conversationMsgById}, msgByUserId: MsgByUserId}, {"$set": {seen: true}}
         )
         
-        io.to(data.body.data._id.toString()).emit('convmessage',updatedMessages || [])
+        io.to(data._id.toString()).emit('convmessage',updatedMessages || [])
         io.to(MsgByUserId.toString()).emit('convmessage',updatedMessages || [])
 
     })
 
     // disconnect
     socket.on('disconnect',()=>{ 
-        onlineUser.delete(data.body.data._id.toString())
+        onlineUser.delete(data._id.toString())
         // console.log("Discionnect user",socket.id)
     })
 })

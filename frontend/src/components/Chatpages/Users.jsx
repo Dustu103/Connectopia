@@ -5,38 +5,39 @@ import { MdTextSnippet } from "react-icons/md"; // For text file icon
 import { FaVideo } from "react-icons/fa"; // For video file icon
 import { AiFillFileImage } from "react-icons/ai";
 import * as openpgp from 'openpgp';
+import { initializeSocket,disconnectSocket } from "../../socket/socket";
 
 const ConversationList = () => {
   const navigate = useNavigate();
-  // const conversations = [
-  //   { name: 'Alice', lastMessage: 'See you at 5pm' },
-  //   { name: 'Bob', lastMessage: 'Let’s meet for coffee' },
-  // ];
   const [allUser, setAllUser] = useState([]);
   const handleChatClick = (id) => {
     navigate(`/chat/${id}`);
   };
-
-  const socketConnection = useSelector(
-    (state) => state?.user?.socketConnection
-  );
+  const respon = JSON.parse(localStorage.getItem('userInfo'));
+  const socketConnection = initializeSocket(respon.token);
 
   const user = useSelector((state) => state?.user?.users[0]?.data?._id);
   // console.log(user)
 
   useEffect(() => {
     if (socketConnection && user) {
-      socketConnection.emit("sidebar", user);
-      // socketConnection
-      socketConnection.on("conversation", (data) => {
+      // Set up the event listener first
+      const handleConversationUpdate = (data) => {
         setAllUser(data);
-        // console.log(data);
-        // setAllUser(decryptedConversations);
-      });
+        // console.log("Updated Conversations:", data);
+      };
+  
+      socketConnection.on("conversation", handleConversationUpdate);
+  
+      // Now emit after listener is set
+      socketConnection.emit("sidebar", user);
+  
+      return () => {
+        socketConnection.off("conversation", handleConversationUpdate); // Remove listener to prevent duplicates
+      };
     }
-  }, [socketConnection, user,allUser]);
-
-  const privateKey = localStorage.getItem('privateKey');
+  }, [socketConnection, user,allUser]); // Keeping allUser if necessary
+  
 
   // const decryptConversations = async (conversations) => {
   //   const decryptedConversations = await Promise.all(
@@ -73,6 +74,7 @@ const ConversationList = () => {
     <div className="p-4 bg-gradient-to-b from-gray-900 to-black text-white">
       <h2 className="text-xl font-semibold mb-4">Chats</h2>
       <ul>
+        {/* {console.log(allUser)} */}
         {allUser
           .filter((user) => user.sender != null)
           .map((conversation, index) => (

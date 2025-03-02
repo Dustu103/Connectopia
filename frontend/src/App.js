@@ -3,7 +3,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import Login  from './components/Auth/Login';
-import React from 'react';
+import React, { useState ,useEffect } from "react";
 import Register from './components/Auth/Register';
 import Chat from "./components/Chatpages/chat";
 import ChatRoom from "./components/Chatpages/Chatroom";
@@ -12,13 +12,32 @@ import ForgetPassword from "./components/Auth/ForgetPassword";
 import UpdateUser from "./components/Auth/UpdateUser";
 import AuthenticatedRoute from "./helperfunc/AuthenticatedRoute";
 import NotFound from "./components/404";
+import Check from "./Check";
+import { initializeSocket,disconnectSocket,getSocket } from "./socket/socket";
 
 
 function App() {
+ 
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    let respon= localStorage.getItem("token");
+    const newSocket = initializeSocket(respon?.token||"");
+    setSocket(newSocket);
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+
   const router = createBrowserRouter([
     {
         path: "/",
         element: <Login/>
+    },
+    {
+      path: "/check",
+      element: <Check/>
     },
     {
       path: "/register",
@@ -26,7 +45,7 @@ function App() {
     },
     {
       path: "/forgetpassword",
-      element:(<AuthenticatedRoute> <ForgetPassword/></AuthenticatedRoute>)
+      element:(<ForgetPassword/>)
     },
     {
       path:"/chat",

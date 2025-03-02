@@ -1,67 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ConversationList from './Users';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { setUser, setOnlineUser, setSocketConnection } from '../../Redux/User/userSlice';
-import io from 'socket.io-client';
-import background from './back.jpg'
-import toast from 'react-hot-toast';
+import { setUser, setOnlineUser } from '../../Redux/User/userSlice';
+import background from './back.jpg';
+import { initializeSocket, disconnectSocket } from '../../socket/socket';
 
 function Chat() {
   const [userDetails, setUserDetails] = useState([]);
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
-  const params =useParams();
-  const navigate = useNavigate()
-  // console.log(params.id)
-
-  const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
-
-  useEffect(()=>{
-    if(!isAuthenticated){
-      toast.error("Please login , access denied")
-      return navigate('/')
-    }
-  },[isAuthenticated])
-
-  const fetchData = async () => {
-    try {
-      const { data } = await axios.get('/user/userdetails');
-      dispatch(setUser(data));
-      setUserDetails(data);
-    } catch (err) {
-      console.log("how the error is happening");
-    }
-  };
+  const params = useParams();
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const respon = JSON.parse(localStorage.getItem('userInfo'));
+        const { data } = await axios.get(`${process.env.REACT_APP_BACKEND}/user/userdetails`, {
+          headers: { Authorization: `${respon.token}` }
+        });
+        dispatch(setUser(data));
+        setUserDetails(data);
+      } catch (err) {
+        console.log("Error fetching user details:", err);
+      }
+    };
+
     fetchData();
   }, []);
 
-  // Socket connection
+  // Initialize socket connection
   useEffect(() => {
     const respon = JSON.parse(localStorage.getItem('userInfo'));
-    const socketConnection = io({
-      auth: {
-        token: respon.token
-      }
-    });
-
-    socketConnection.on('onlineUser', (data) => {
+    const socket = initializeSocket(respon.token);
+    console.log("running")
+    socket.on('onlineUser', (data) => {
       dispatch(setOnlineUser(data));
     });
-    dispatch(setSocketConnection(socketConnection));
 
     return () => {
-      socketConnection.disconnect();
+      disconnectSocket();
     };
-
   }, []);
 
   return (
-    <div className="flex h-screen relative overflow-hidden  bg-gray-900">
+    <div className="flex h-screen relative overflow-hidden bg-gray-900">
       <div className="w-[5%] bg-gray-900">
         <Sidebar username={userDetails?.data?.name || 'Username'} url={userDetails?.data?.profile_pic} />
       </div>
@@ -71,12 +56,11 @@ function Chat() {
           <ConversationList />
         </div>
         <div className='w-[61%] bg-gray-900 p-4 rounded-md shadow-md mr-2 pr-1'>
-          {/* {console} */}
-        {params.id === undefined ? (
-        <img className='h-full w-full' style={{ objectFit: "cover" }} src={background} alt="Background" />
-      ) : (
-        <Outlet />
-      )}
+          {params.id === undefined ? (
+            <img className='h-full w-full' style={{ objectFit: "cover" }} src={background} alt="Background" />
+          ) : (
+            <Outlet />
+          )}
         </div>
       </div>
     </div>

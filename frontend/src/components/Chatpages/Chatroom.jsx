@@ -8,283 +8,204 @@ import toast from "react-hot-toast";
 import app from "../../fireStore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import moment from "moment";
-import './customEmojiPicker.css'
+import './customEmojiPicker.css';
 import { MdTextSnippet } from 'react-icons/md';
-
-import * as openpgp from 'openpgp';
-// import data from '@emoji-mart/data'
-// import Picker from '@emoji-mart/react'
-
-
-// moment().format();
+import { initializeSocket } from '../../socket/socket';
 
 const ChatRoom = () => {
   const params = useParams();
-  // console.log(params.id);
-  const socketConnection = useSelector((state) => state?.user?.socketConnection);
+  const respon = JSON.parse(localStorage.getItem('userInfo'));
+  const socketConnection = initializeSocket(respon?.token);
   const user = useSelector((state) => state?.user);
-  // console.log(user)
-  // console.log(user?.users[0].data._id);
-  const [userData, setUserData] = useState(); //dataUser = userData
+  
+  const [userData, setUserData] = useState(null);
   const [messageInput, setMessageInput] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const chatThreadRef = useRef(null);
-  const [file, setFile] = useState();
+  const [file, setFile] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [Allmessage, setAllmessage] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [decryptedMessage, setDecryptedMessages]=useState([])
+  
+  const chatThreadRef = useRef(null);
 
-  //  scroll down
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  // let prevm =[]
-  // let atBottom = false;
+  // Scroll chat to bottom when new messages arrive
   useEffect(() => {
-    chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight;
-  }, [Allmessage])   //problem while hit allmessage
+    if (chatThreadRef.current) {
+      chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight;
+    }
+  }, [Allmessage]);
 
-  // const encryptedMessage=async()=>{ await openpgp.encrypt({
-  //   message: await openpgp.createMessage({ text: message }),
-  //   encryptionKeys: await openpgp.readKey({ armoredKey: publicKey }),
-  // })};
-
+  // Function to send a message
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let fileurl;
+    let fileurl = null;
+
     if (file) {
       fileurl = await handleFileUpload();
     }
+
     if (messageInput.trim() !== "" || fileurl) {
-      const newMessages = {
+      const newMessage = {
         text: messageInput.trim() || "",
         fileUrl: fileurl || "",
         type: "sent",
+        senderId: user?.users[0]?.data._id,
+        receiverId: params.id,
+        timeStamp: new Date().toISOString(),
+        msgByUserId: user?.users[0].data._id,
       };
-      setAllmessage((prevmessages) => [...prevmessages, newMessages]);
+
+      setAllmessage((prevMessages) => [...prevMessages, newMessage]);
+
       if (socketConnection) {
-        socketConnection.emit("newmessages", {
-          ...newMessages,
-          senderId: user?.users[0].data._id,
-          receiverId: params.id,
-          timeStamp: new Date().toISOString(),
-          msgByUserId: user?.users[0].data._id,
-        });
+        console.log("🔹 Emitting message:", newMessage);
+        socketConnection.emit("newmessages", newMessage);
       }
+
       setMessageInput("");
       setFile(null);
     }
   };
 
-  const handleEmojiClick = (emojiObject) => {
-    setMessageInput(messageInput + emojiObject.emoji);
-    setShowEmojiPicker(false);
-  };
-
+  // Function to upload a file
   const handleFileUpload = async () => {
     if (file) {
       setIsLoading(true);
       try {
-        const storge = getStorage(app);
-        const storageRef = ref(storge, "chatApp/" + file.name);
+        const storage = getStorage(app);
+        const storageRef = ref(storage, "chatApp/" + file.name);
         await uploadBytes(storageRef, file);
         const downloadUrl = await getDownloadURL(storageRef);
         setShowPreview(false);
         setIsLoading(false);
         return downloadUrl;
-      } catch {
+      } catch (error) {
+        console.error("File upload error:", error);
         setIsLoading(false);
-        return toast.error("Something went wrong");
+        toast.error("Something went wrong");
       }
     }
   };
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFile(file);
-      setShowPreview(true);
-    }
-  };
 
-  const handleCancel = () => {
-    setFile(null);
-    setShowPreview(false);
-  };
-
-
+  // Function to listen for socket events
   useEffect(() => {
     if (socketConnection) {
-      socketConnection.emit("message", params.id);
-      socketConnection.on("isonline", (data) => {
-        setUserData(data);
-        // console.log(data);
-      });
+      console.log("🔹 Socket Connected");
+
       socketConnection.on("prevmessages", (data) => {
         setAllmessage(data);
       });
-      socketConnection.emit("seen",params.id)
-      return ()=>{ socketConnection.off('prevmessages')}
+
+      socketConnection.on("newmessages", (newMessage) => {
+        console.log("🔹 New message received:", newMessage);
+        setAllmessage((prevMessages) => [...prevMessages, newMessage]);
+      });
+
+      socketConnection.emit("message", params.id);
+      socketConnection.on("isonline", (data) => {
+        console.log("🔹 User online status:", data);
+        setUserData(data);
+      });
+
+      socketConnection.emit("seen", params.id);
+
+      return () => {
+        socketConnection.off("prevmessages");
+        socketConnection.off("isonline");
+        socketConnection.off("seen");
+        socketConnection.off("message");
+        socketConnection.off("newmessages");
+      };
     }
-  }, [socketConnection,user,userData,params,Allmessage]); //hit userdata
-
-
+  }, [socketConnection, params.id,Allmessage,userData]);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-r from-gray-800 via-black to-gray-900 z-10">
-  {userData && (
-    <div className="w-full bg-gradient-to-r from-gray-900 to-gray-700 h-[55px] rounded-md">
-      <div className="flex items-center p-2 rounded-lg">
-        {/* {console.log(Allmessage)} */}
-        <img
-          src={userData.profile_pic}
-          alt={userData.name}
-          className="w-12 h-12 rounded-full object-cover mr-3 border-2 border-gray-600"
-        />
-        <div className="flex flex-col">
-          <p className="font-medium text-gray-100">{userData.name}</p>
-          {userData.online ? (
-            <p className="text-sm text-green-400">Online</p>
-          ) : (
-            <p className="text-sm text-gray-500">Offline</p>
-          )}
+    <div className="flex flex-col h-full bg-gradient-to-r from-gray-800 via-black to-gray-900">
+      {userData && (
+        <div className="w-full bg-gradient-to-r from-gray-900 to-gray-700 h-[55px] rounded-md">
+          <div className="flex items-center p-2 rounded-lg">
+            <img
+              src={userData.profile_pic}
+              alt={userData.name}
+              className="w-12 h-12 rounded-full object-cover mr-3 border-2 border-gray-600"
+            />
+            <div className="flex flex-col">
+              <p className="font-medium text-gray-100">{userData.name}</p>
+              <p className="text-sm text-gray-500">
+                {userData.online ? "Online" : "Offline"}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  )}
-  {Allmessage &&(
-    <ul
-      className="chat-thread flex-grow p-4 space-y-4 overflow-y-auto"
-      style={{ height: "calc(100vh - 64px)" }}
-      ref={chatThreadRef}
-    >
-      {/* {console.log(decryptedMessage)} */}
-      {Allmessage.map((message, index) => (
-       <li
-       key={index}
-       className={`relative flex flex-col py-2 px-4 rounded-lg text-sm max-w-[90%] md:max-w-[70%] ${
-         user?.users[0].data._id !== message.msgByUserId && message.msgByUserId !== undefined
-           ?  "mr-auto bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 text-black"
-           : "ml-auto bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 text-white"
-       }`}
-     >
-       {message.fileUrl && (
-         <div className="w-full max-h-96 rounded-md mb-1">
-           {message.fileUrl.includes('.mp4') ? (
-             <video
-               src={message.fileUrl}
-               controls
-               className="w-full h-96 rounded-md object-cover"
-             />
-           ) : message.fileUrl.includes('.txt') ? (
-             <a
-               href={message.fileUrl}
-               className="flex items-center bg-gray-200 rounded-md p-2 mb-1 hover:bg-gray-300 transition-colors"
-               target="_blank"
-               rel="noopener noreferrer"
-             >
-               <MdTextSnippet className="mr-2 text-gray-600" size={24} />
-               <span className="text-gray-700">Download Text File</span>
-             </a>
-           ) : (
-             <img
-               src={message.fileUrl}
-               alt="Uploaded file"
-               className="w-full h-auto rounded-md object-cover"
-             />
-           )}
-         </div>
-       )}
-       {message.text && (
-         <span className="text-sm">{message.text}</span>
-       )}
-       <p className="absolute bottom-1 right-2 text-xs text-gray-400">
-         {moment(message.createdAt).format("hh:mm A")}
-       </p>
-     </li>
-     
-      ))}
-    </ul>
-  )}
+      )}
 
-{showEmojiPicker && (
-  <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
-    <div className="relative bg-gradient-to-r from-gray-800 via-gray-900 to-black rounded-lg shadow-lg p-4 max-w-md w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="text-teal-400 font-semibold">Pick an Emoji</h4>
-        <button
-          onClick={() => setShowEmojiPicker(false)}
-          className="text-teal-400 hover:text-teal-600"
-        >
-          <FaTimes className="text-xl" />
+      <ul
+        className="chat-thread flex-grow p-4 space-y-4 overflow-y-auto"
+        style={{ height: "calc(100vh - 64px)" }}
+        ref={chatThreadRef}
+      >
+        {Allmessage.map((message, index) => (
+          <li
+            key={index}
+            className={`relative flex flex-col py-2 px-4 rounded-lg text-sm max-w-[90%] md:max-w-[70%] ${
+              user?.users[0]?.data._id !== message.msgByUserId
+                ? "mr-auto bg-gray-500 text-black"
+                : "ml-auto bg-teal-600 text-white"
+            }`}
+          >
+            {message.fileUrl && (
+              <div className="w-full max-h-96 rounded-md mb-1">
+                {message.fileUrl.includes(".mp4") ? (
+                  <video
+                    src={message.fileUrl}
+                    controls
+                    className="w-full h-96 rounded-md object-cover"
+                  />
+                ) : (
+                  <img
+                    src={message.fileUrl}
+                    alt="Uploaded file"
+                    className="w-full h-auto rounded-md object-cover"
+                  />
+                )}
+              </div>
+            )}
+            {message.text && <span className="text-sm">{message.text}</span>}
+            <p className="absolute bottom-1 right-2 text-xs text-gray-400">
+              {moment(message.createdAt).format("hh:mm A")}
+            </p>
+          </li>
+        ))}
+      </ul>
+
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-center w-full p-4 bg-gray-800"
+      >
+        <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+          <FaSmile className="text-2xl text-yellow-400" />
         </button>
-      </div>
 
-      {/* Custom EmojiPicker Wrapper */}
-      <div className="bg-gradient-to-r from-black via-gray-800 to-gray-700 p-3 rounded-lg max-h-96 overflow-y-auto">
-        <EmojiPicker 
-          onEmojiClick={handleEmojiClick}
-          className="custom-emoji-picker"
+        <input
+          className="flex-grow px-4 py-2 text-lg bg-white border-b-2 border-gray-400 text-gray-700 outline-none"
+          type="text"
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          placeholder="Type a message..."
+          autoComplete="off"
         />
-      </div>
+
+        <input type="file" id="fileInput" style={{ display: "none" }} onChange={(e) => setFile(e.target.files[0])} />
+        <label htmlFor="fileInput">
+          <FaPaperclip className="text-2xl text-goldenrod" />
+        </label>
+
+        <button type="submit">
+          <FaPaperPlane className="text-2xl text-green-500" />
+        </button>
+      </form>
     </div>
-  </div>
-)}
-
-
-
-  <form
-    onSubmit={handleSubmit}
-    className="flex items-center w-full p-4 bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900"
-  >
-    <button
-      type="button"
-      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-      className="text-gray-300 px-2"
-    >
-      <FaSmile style={{color:"yellow"}} className="text-2xl" />
-    </button>
-
-    <input
-      className="flex-grow px-4 py-2 text-lg bg-white border-b-2 border-gray-400 text-gray-700 outline-none"
-      type="text"
-      value={messageInput}
-      onChange={(e) => setMessageInput(e.target.value)}
-      placeholder="Type a message..."
-      autoComplete="off"
-    />
-
-    <input
-      type="file"
-      id="fileInput"
-      style={{ display: "none" }}
-      onChange={handleFileChange}
-    />
-    <label
-      htmlFor="fileInput"
-      className="cursor-pointer text-gray-300 px-2"
-    >
-      <FaPaperclip style={{color:"goldenrod"}} className="text-2xl" />
-    </label>
-
-    <button type="submit" className="text-gray-300 px-2">
-      <FaPaperPlane style={{color:"greenyellow"}} className="text-2xl from-green-500" />
-    </button>
-  </form>
-
-  {showPreview && (
-    <FilePreviewPopover
-      className="bg-gradient-to-r from-green-500 via-green-600 to-green-700"
-      file={file}
-      messageInput={messageInput}
-      setMessageInput={setMessageInput}
-      onSend={handleSubmit}
-      onCancel={handleCancel}
-      isLoading={isLoading}
-    />
-  )}
-</div>
-
-  
   );
 };
 
-export default ChatRoom;  
+export default ChatRoom;

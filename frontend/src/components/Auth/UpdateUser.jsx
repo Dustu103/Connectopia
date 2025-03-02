@@ -94,7 +94,7 @@ function UpdateUser() {
       };
       // console.log(profileUrl);
       const { data } = await axios.post(
-        "/user/updatedetails",
+        `${process.env.REACT_APP_BACKEND}/user/updatedetails`,
         { name, email, profile_pic: imgUploaded },
         config
       );

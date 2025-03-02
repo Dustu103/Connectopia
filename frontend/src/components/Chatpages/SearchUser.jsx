@@ -17,9 +17,19 @@ function SearchUser({onClose}) {
 
     const alluser=async()=>{
       try {
-        const {data}=await axios.get('/user/');
-        setSearchUser(data.data)
-        setLoading(false)
+        const respon = JSON.parse(localStorage.getItem('userInfo'));
+        const {data}=await axios.get(`${process.env.REACT_APP_BACKEND}/user/`,{headers: {authorization: `${respon.token}`}});
+        console.log(data.data)
+        if(data.data){
+          setSearchUser(data.data)
+          setLoading(false)
+        }else{
+          setSearchUser([])
+          setTimeout(() => {
+          setLoading(false)
+          }, 500);
+        }
+        
       } catch (error) {
         console.log(error)
       }      

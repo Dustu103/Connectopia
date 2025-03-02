@@ -1,24 +1,35 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
 
-const connectDataBase = async function connectToDatabase() {
-  try {
-    const uri = process.env.MONGO_URI;
+        console.log("✅ MongoDB Connected Successfully");
 
-    // Connect to MongoDB
-    await mongoose.connect(uri);
-    console.log("Successfully connected to the MongoDB database");
+        mongoose.connection.on('disconnected', () => {
+            console.warn("⚠️ MongoDB Disconnected! Attempting to Reconnect...");
+            reconnectDB();
+        });
 
-    // Optional: Handle connection events
-    const db = mongoose.connection;
-    db.on("error", console.error.bind(console, "MongoDB connection error:"));
-    db.once("open", function () {
-      console.log("MongoDB connected!");
-    });
-  } catch (err) {
-    console.error("Error connecting to the MongoDB database", err);
-  }
-}
+    } catch (error) {
+        console.error("❌ MongoDB Connection Error:", error.message);
+        setTimeout(reconnectDB, 5000); // Retry after 5 seconds
+    }
+};
 
-// Call the async function to connect to the database
-module.exports= connectDataBase;
+// Reconnection function
+const reconnectDB = async () => {
+    console.log("🔄 Attempting to Reconnect to MongoDB...");
+    await connectDB();
+};
+
+// Handling database errors
+mongoose.connection.on('error', (err) => {
+    console.error("❗ MongoDB Error:", err.message);
+    mongoose.disconnect();
+});
+
+module.exports = connectDB;

@@ -3,11 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css'; // Ensure this file has the updated CSS
 import toast from 'react-hot-toast';
+import { setUser } from '../../Redux/User/userSlice';
+import { useDispatch } from 'react-redux';
+
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,11 +21,15 @@ function Login() {
           "Content-type": "application/json",
         },
       };
-      const { data } = await axios.post("/user/login", { email, password }, config);
+      const { data } = await axios.post(`${process.env.REACT_APP_BACKEND}/user/login`, { email, password }, config);
       localStorage.setItem("userInfo", JSON.stringify(data));
+      // console.log(data);
       toast.success(data.message);
+      dispatch(setUser(data));
       navigate("/chat");
+      
     } catch (err) {
+      console.log(err)
       toast.error(err.response?.data?.message || "Error in Login");
     }
   };
@@ -64,7 +72,7 @@ function Login() {
               onChange={(e) => setPassword(e.target.value)}
             />
             <p className='text-white w-full text-right mr-3'>
-              <Link to="forgetpassword">Forget Password?</Link>
+              <Link to="/forgetpassword">Forget Password?</Link>
             </p>
           </div>
           <button
