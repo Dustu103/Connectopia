@@ -51,7 +51,7 @@ io.on('connection',async(socket)=>{
     socket.join(data?._id.toString())
     onlineUser.add(data?._id.toString())
     // const publicKey= data?.body.data?.public_key
-    console.log(onlineUser)
+    // console.log(onlineUser)
     io.emit('onlineUser',Array.from(onlineUser))  //io represents the entire Socket.io server instance and is used to manage the overall connections, send messages to all connected clients, or broadcast events.
 
     socket.on('message',async(id)=>{   //socket represents a single client connection and is used to interact with that specific client (or room).
@@ -66,7 +66,7 @@ io.on('connection',async(socket)=>{
             profile_pic: userDetails.profile_pic,
             online : onlineUser.has(id.toString())
         }
-        console.log(payload)
+        // console.log(payload)
         socket.emit('isonline',payload) //message-user = isonline
 
         // finding prevmessages
